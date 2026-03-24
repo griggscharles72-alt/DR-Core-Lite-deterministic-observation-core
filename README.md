@@ -1,22 +1,21 @@
+````markdown
 # DR-Core-Lite-deterministic-observation-core
 
 ## DR Core Lite
 
-**Deterministic Observation Core**
+**Deterministic Observation Core – Lite Version**
 
-DR Core Lite is a lean deterministic system for collecting, parsing, and reporting system and network environment observations using stable, proven operating-system tools.
+DR Core Lite is a lean deterministic system for collecting, parsing, and reporting system and network observations using native Linux tools and Python scripts. It prioritizes transparency, reproducibility, and minimal hidden logic.
 
-The system is intentionally minimal and transparent. Each external program is executed by its own script, each parser is isolated, and a thin wrapper orchestrates the full run sequence.
+---
 
-### Architecture Principles
+## Architecture Principles
 
-* Deterministic behavior
-* Tool transparency
-* Minimal hidden logic
-* Easy rebuild and debugging
-* Explicit artifact generation
-
-DR Core Lite is designed as a trusted baseline observation system that can be inspected, modified, or rebuilt quickly.
+* Deterministic behavior – same input environment produces identical outputs.
+* Tool transparency – every external program executed in isolation.
+* Minimal hidden logic – explicit scripts and readable code.
+* Fast rebuild – database and artifacts can be recreated quickly.
+* Explicit artifact generation – structured JSON + human-readable reports.
 
 ---
 
@@ -24,18 +23,15 @@ DR Core Lite is designed as a trusted baseline observation system that can be in
 
 ### Deterministic Execution
 
-The system produces identical outputs given the same environment and configuration.
-Pipeline stages are:
+Pipeline stages:
 
 **Tool Execution → Parsing → Storage → Reporting**
 
 Each stage is isolated and inspectable.
 
----
+### One Script per Tool
 
-### One Program per Script
-
-Every external program runs in its own dedicated script:
+Dedicated scripts for each external program:
 
 * `tool_ip.py`
 * `tool_iw.py`
@@ -45,39 +41,26 @@ Every external program runs in its own dedicated script:
 
 Benefits:
 
-* Clear understanding of each tool
-* Easier debugging and testing
-* Safer refactoring
-* Learning platform for system tools
+* Simplifies debugging and verification
+* Reduces risk of cross-script contamination
+* Serves as a learning platform for system diagnostics
 
----
+### Thin Wrapper Orchestration
 
-### Thin Wrapper Architecture
-
-A single wrapper provides entry points without altering individual scripts:
+The wrapper orchestrates execution:
 
 ```bash
 dr-core-lite doctor
 dr-core-lite collect
 dr-core-lite report
 dr-core-lite all
-```
-
-The wrapper orchestrates execution of all scripts while preserving isolation.
-
----
+````
 
 ### Minimal Abstraction
 
-The system avoids complex frameworks or hidden automation.
-
-Technologies used:
-
-* Python
-* SQLite
-* Native Linux tools
-
-Focus is on clarity, control, and reproducibility.
+* Python + SQLite + native Linux commands
+* Avoids heavy frameworks or hidden automation
+* Focus on clarity, control, and reproducibility
 
 ---
 
@@ -85,43 +68,47 @@ Focus is on clarity, control, and reproducibility.
 
 ### 1. Tool Execution
 
-External programs gather environment data. Examples:
+Collect environment data via system tools:
 
-* `ip`
-* `iw`
-* `rfkill`
-* `nmcli`
-* `ethtool`
+* `ip` – network interfaces and IPs
+* `iw` – wireless scan info
+* `rfkill` – soft/hard block states
+* `nmcli` – connections and devices
+* `ethtool` – driver and interface info
 
-Optional capture tools are used if enabled.
-Outputs are stored as raw artifacts.
+Optional capture tools:
+
+* `tcpdump`, `dumpcap`, `tshark`
+
+Raw outputs stored in `data/artifacts/raw/`.
 
 ---
 
 ### 2. Parsing
 
-Dedicated parser modules convert raw tool output into structured data.
+Dedicated parsers convert raw output into deterministic JSON:
 
-Examples:
-
-* `parse_iw.py`
-* `parse_nmcli.py`
-* `parse_rfkill.py`
-
-Parsers generate deterministic JSON records.
+* `parse_ip.py` → `interfaces.json`
+* `parse_iw.py` → `wireless.json`
+* `parse_rfkill.py` → `radio_state.json`
+* `parse_nmcli.py` → `connections.json`
+* `parse_ethtool.py` → `driver_info.json`
 
 ---
 
 ### 3. Storage
 
-Parsed observations are stored in SQLite:
+SQLite database stores observations and run metadata:
 
-* Run history
-* Tool outputs
-* Parsed observations
-* Artifact references
+**Tables:**
 
-Enables historical analysis and comparisons.
+* `interfaces` – network interfaces
+* `wireless` – scanned access points
+* `radio_state` – soft/hard blocked states
+* `connections` – active connections
+* `driver_info` – driver metadata
+
+Run IDs link artifacts and observations.
 
 ---
 
@@ -129,12 +116,11 @@ Enables historical analysis and comparisons.
 
 Reports summarize stored observations:
 
-* Environment summaries
-* Tool output summaries
-* Structured JSON
-* Human-readable summaries
+* `summary.txt` – human-readable overview
+* `summary.json` – structured JSON report
+* `doctor.txt` – environment validation report
 
-Reports are deterministic functions of stored state.
+Reports are deterministic functions of the stored database state.
 
 ---
 
@@ -146,71 +132,53 @@ dr-core-lite/
 ├── requirements.txt
 ├── .gitignore
 ├── .env.example
-│
-├── bin/
-│   └── dr-core-lite
-│
+├── bin/dr-core-lite
 ├── config/
 │   ├── system.yaml
 │   ├── tags.yaml
 │   └── thresholds.yaml
-│
 ├── data/
-│   ├── db/
-│   │   └── core.db
+│   ├── db/core.db
 │   ├── artifacts/
 │   │   ├── raw/
 │   │   ├── parsed/
 │   │   └── reports/
-│   └── logs/
-│       └── core.log
-│
+│   └── logs/core.log
 ├── docs/
 │   ├── architecture.md
 │   ├── tool_map.md
 │   ├── artifact_model.md
 │   └── runbook.md
-│
-├── src/
-│   └── dr_core_lite/
-│       ├── main_wrapper.py
-│       ├── doctor_env.py
-│       ├── db_store.py
-│       ├── report_summary.py
-│       ├── tag_rules.py
-│       │
-│       ├── tools/
-│       │   ├── tool_ip.py
-│       │   ├── tool_iw.py
-│       │   ├── tool_rfkill.py
-│       │   ├── tool_nmcli.py
-│       │   ├── tool_ethtool.py
-│       │   ├── tool_tcpdump.py
-│       │   ├── tool_dumpcap.py
-│       │   └── tool_tshark.py
-│       │
-│       ├── parsers/
-│       │   ├── parse_ip.py
-│       │   ├── parse_iw.py
-│       │   ├── parse_rfkill.py
-│       │   ├── parse_nmcli.py
-│       │   ├── parse_ethtool.py
-│       │   └── parse_tshark.py
-│       │
-│       └── helpers/
-│           ├── paths.py
-│           ├── subprocess_safe.py
-│           ├── jsonio.py
-│           ├── sqlite_utils.py
-│           ├── time_utils.py
-│           └── log_utils.py
-│
+├── src/dr_core_lite/
+│   ├── main_wrapper.py
+│   ├── doctor_env.py
+│   ├── db_store.py
+│   ├── report_summary.py
+│   ├── tag_rules.py
+│   ├── tools/
+│   │   ├── tool_ip.py
+│   │   ├── tool_iw.py
+│   │   ├── tool_rfkill.py
+│   │   ├── tool_nmcli.py
+│   │   └── tool_ethtool.py
+│   ├── parsers/
+│   │   ├── parse_ip.py
+│   │   ├── parse_iw.py
+│   │   ├── parse_rfkill.py
+│   │   ├── parse_nmcli.py
+│   │   └── parse_ethtool.py
+│   └── helpers/
+│       ├── paths.py
+│       ├── subprocess_safe.py
+│       ├── jsonio.py
+│       ├── sqlite_utils.py
+│       ├── time_utils.py
+│       └── log_utils.py
 ├── tests/
 │   ├── test_tools.py
 │   ├── test_parsers.py
 │   ├── test_db.py
 │   └── test_reports.py
-│
 └── scripts/
     ├── bootstrap.sh
     └── verify_env.sh
@@ -222,130 +190,36 @@ dr-core-lite/
 
 ### `doctor`
 
-Validates environment:
-
-* Required programs
-* Python version
-* Directory structure
-* Database accessibility
+Validates environment and database accessibility:
 
 ```bash
 dr-core-lite doctor
 ```
 
----
-
 ### `collect`
 
-Executes observation tools and collects raw artifacts:
-
-* `ip`
-* `rfkill`
-* `iw`
-* `nmcli`
-* `ethtool`
-
-Optional capture tools may also run.
+Runs all observation tools:
 
 ```bash
 dr-core-lite collect
 ```
 
----
-
 ### `report`
 
-Generates summaries from stored observations:
-
-* JSON summary
-* Text report
-* Artifact references
+Generates deterministic summary reports:
 
 ```bash
 dr-core-lite report
 ```
 
----
-
 ### `all`
 
-Runs the full deterministic pipeline:
+Runs full deterministic pipeline:
 
 ```bash
 dr-core-lite all
 # doctor → collect → parse → store → report
 ```
-
----
-
-## System Programs Used
-
-**Required:**
-
-* python3
-* sqlite3
-* ip
-* iw
-* rfkill
-* nmcli
-* ethtool
-
-**Optional Capture Tools:**
-
-* tcpdump
-* dumpcap
-* tshark
-
----
-
-## Artifact Model
-
-**Raw Artifacts:**
-Direct output from system tools:
-
-```
-data/artifacts/raw/ip/
-data/artifacts/raw/iw/
-data/artifacts/raw/rfkill/
-```
-
-**Parsed Artifacts:**
-Structured JSON representations:
-
-```
-interfaces.json
-wireless_scan.json
-radio_state.json
-driver_info.json
-```
-
-**Reports:**
-Human-readable summaries:
-
-```
-summary.txt
-summary.json
-doctor.txt
-```
-
----
-
-## Database Model
-
-SQLite stores observations and run metadata.
-
-**Core tables:**
-
-* runs
-* tool_runs
-* interfaces
-* access_points
-* radio_state
-* driver_info
-* artifacts
-* tags
-
-The database links each observation to the producing run.
 
 ---
 
@@ -364,17 +238,16 @@ pip install -r requirements.txt
 
 ## Intended Use
 
-DR Core Lite is:
-
-* A deterministic observation baseline
-* A transparent system diagnostics tool
-* A learning platform for system tools
-* A trusted fallback architecture
-
-Emphasizes reliability, clarity, and reproducibility over automation complexity.
+* Deterministic baseline observation
+* Transparent system diagnostics
+* Learning platform for Linux networking and tools
+* Trusted fallback architecture
 
 ---
 
 ## License
 
 Open architecture reference implementation.
+
+```
+```
