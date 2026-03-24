@@ -1,84 +1,33 @@
 #!/usr/bin/env python3
+from dr_core_lite.helpers.paths import RAW_DIR, PARSED_DIR
+import os, json
 
-"""
-DR Core Lite — RFKill Output Parser
+def parse_rfkill():
+    raw_file = os.path.join(RAW_DIR, "rfkill_raw.txt")
+    parsed_file = os.path.join(PARSED_DIR, "radio_state.json")
 
-Purpose
--------
-Parse `rfkill list` output into structured radio state records.
-"""
+    parsed = []
+    current_dev = {}
+    if os.path.exists(raw_file):
+        with open(raw_file, "r") as f:
+            for line in f:
+                line = line.strip()
+                if line and ":" in line and not line.startswith(("Soft", "Hard")):
+                    if current_dev:
+                        parsed.append(current_dev)
+                    parts = line.split(":")
+                    current_dev = {"index": parts[0], "name": parts[1].strip()}
+                elif current_dev and "Soft blocked" in line:
+                    current_dev["soft_blocked"] = line.split(":")[1].strip()
+                elif current_dev and "Hard blocked" in line:
+                    current_dev["hard_blocked"] = line.split(":")[1].strip()
+            if current_dev:
+                parsed.append(current_dev)
 
-from __future__ import annotations
+    os.makedirs(PARSED_DIR, exist_ok=True)
+    with open(parsed_file, "w") as f:
+        json.dump(parsed, f, indent=2)
+    return parsed
 
-from typing import List, Dict
-
-
-def parse_rfkill(raw_output: str) -> List[Dict]:
-    """
-    Parse rfkill output into structured records.
-    """
-
-    records: List[Dict] = []
-
-    current_device = None
-    current_type = None
-    soft_block = None
-    hard_block = None
-
-    lines = raw_output.splitlines()
-
-    for line in lines:
-
-        line = line.strip()
-
-        if not line:
-            continue
-
-        if ":" in line and line[0].isdigit():
-
-            if current_device is not None:
-                records.append(
-                    {
-                        "type": "radio_state",
-                        "device": current_device,
-                        "radio_type": current_type,
-                        "soft_blocked": soft_block,
-                        "hard_blocked": hard_block,
-                    }
-                )
-
-            parts = line.split(":", 2)
-
-            device_id = parts[0]
-            remainder = parts[2].strip()
-
-            pieces = remainder.split()
-
-            current_device = pieces[-1]
-            current_type = " ".join(pieces[:-1])
-
-            soft_block = None
-            hard_block = None
-
-            continue
-
-        if line.startswith("Soft blocked:"):
-            value = line.split(":")[1].strip()
-            soft_block = value.lower() == "yes"
-
-        if line.startswith("Hard blocked:"):
-            value = line.split(":")[1].strip()
-            hard_block = value.lower() == "yes"
-
-    if current_device is not None:
-        records.append(
-            {
-                "type": "radio_state",
-                "device": current_device,
-                "radio_type": current_type,
-                "soft_blocked": soft_block,
-                "hard_blocked": hard_block,
-            }
-        )
-
-    return records
+if __name__ == "__main__":
+    parse_rfkill()

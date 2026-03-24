@@ -1,84 +1,24 @@
 #!/usr/bin/env python3
+from dr_core_lite.helpers.paths import RAW_DIR, PARSED_DIR
+import os, json
 
-"""
-DR Core Lite — Ethtool Output Parser
+def parse_ethtool():
+    raw_file = os.path.join(RAW_DIR, "ethtool_raw.txt")
+    parsed_file = os.path.join(PARSED_DIR, "driver_info.json")
 
-Purpose
--------
-Parse `ethtool -i` output into structured driver records.
-"""
+    parsed = {}
+    if os.path.exists(raw_file):
+        with open(raw_file, "r") as f:
+            for line in f:
+                line = line.strip()
+                if ":" in line:
+                    k, v = line.split(":", 1)
+                    parsed[k.strip()] = v.strip()
 
-from __future__ import annotations
+    os.makedirs(PARSED_DIR, exist_ok=True)
+    with open(parsed_file, "w") as f:
+        json.dump(parsed, f, indent=2)
+    return parsed
 
-from typing import List, Dict
-
-
-def parse_ethtool(raw_output: str) -> List[Dict]:
-    """
-    Parse ethtool output into driver records.
-    """
-
-    records: List[Dict] = []
-
-    current_iface = None
-    driver = None
-    version = None
-    firmware = None
-    bus_info = None
-
-    lines = raw_output.splitlines()
-
-    for line in lines:
-
-        line = line.strip()
-
-        if not line:
-            continue
-
-        if line.startswith("Interface:"):
-
-            if current_iface:
-                records.append(
-                    {
-                        "type": "driver_info",
-                        "interface": current_iface,
-                        "driver": driver,
-                        "version": version,
-                        "firmware": firmware,
-                        "bus_info": bus_info,
-                    }
-                )
-
-            current_iface = line.split(":", 1)[1].strip()
-            driver = None
-            version = None
-            firmware = None
-            bus_info = None
-
-            continue
-
-        if line.startswith("driver:"):
-            driver = line.split(":", 1)[1].strip()
-
-        elif line.startswith("version:"):
-            version = line.split(":", 1)[1].strip()
-
-        elif line.startswith("firmware-version:"):
-            firmware = line.split(":", 1)[1].strip()
-
-        elif line.startswith("bus-info:"):
-            bus_info = line.split(":", 1)[1].strip()
-
-    if current_iface:
-        records.append(
-            {
-                "type": "driver_info",
-                "interface": current_iface,
-                "driver": driver,
-                "version": version,
-                "firmware": firmware,
-                "bus_info": bus_info,
-            }
-        )
-
-    return records
+if __name__ == "__main__":
+    parse_ethtool()

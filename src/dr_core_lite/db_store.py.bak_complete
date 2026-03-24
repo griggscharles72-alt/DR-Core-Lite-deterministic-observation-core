@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+import sqlite3, json, os, datetime
+from dr_core_lite.helpers.paths import PARSED_DIR, DB_FILE
+
+def init_db():
+    os.makedirs(os.path.dirname(DB_FILE), exist_ok=True)
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    # Ensure all tables exist
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS interfaces (
+            run_id INTEGER,
+            iface_index TEXT,
+            name TEXT,
+            ipv4 TEXT,
+            ipv6 TEXT
+        )
+    """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS wireless (
+            run_id INTEGER,
+            name TEXT,
+            mac TEXT,
+            type TEXT,
+            txpower TEXT
+        )
+    """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS radio_state (
+            run_id INTEGER,
+            iface_index TEXT,
+            name TEXT,
+            soft_blocked TEXT,
+            hard_blocked TEXT
+        )
+    """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS connections (
+            run_id INTEGER,
+            device TEXT,
+            type TEXT,
+            state TEXT,
+            connection TEXT
+        )
+    """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS driver_info (
+            run_id INTEGER,
+            key TEXT,
+            value TEXT
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+# Rest of db_store.py remains unchanged, call init_db() first
+def run_db_store():
+    init_db()
+    # insert parsed JSON into tables
+    # ...
+
+if __name__ == "__main__":
+    run_db_store()

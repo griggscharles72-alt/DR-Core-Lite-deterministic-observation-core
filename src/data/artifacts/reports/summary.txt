@@ -1,0 +1,71 @@
+DR-Core-Lite Observation Summary
+===============================
+
+File: connections.json
+[
+  {
+    "device": "enp1s0",
+    "type": "ethernet",
+    "state": "connected",
+    "connection": "netplan-enp1s0"
+  },
+  {
+    "device": "lo",
+    "type": "loopback",
+    "state": "connected",
+    "connection": "lo"
+  },
+  {
+    "device": "wlp2s0",
+    "type": "wifi",
+    "state": "unavailable",
+    "connection": "--"
+  }
+]
+File: driver_info.json
+{
+  "Cannot get driver information": "Operation not supported"
+}
+File: interfaces.json
+[
+  {
+    "index": "1",
+    "name": "lo",
+    "ipv4": "127.0.0.1/8",
+    "ipv6": "::1/128"
+  },
+  {
+    "index": "2",
+    "name": "enp1s0",
+    "ipv4": "192.168.1.208/24",
+    "ipv6": "fe80::86a9:3eff:fe7a:a814/64"
+  },
+  {
+    "index": "3",
+    "name": "wlp2s0"
+  }
+]
+File: radio_state.json
+[
+  {
+    "index": "0",
+    "name": "hci0",
+    "soft_blocked": "yes",
+    "hard_blocked": "no"
+  },
+  {
+    "index": "1",
+    "name": "phy0",
+    "soft_blocked": "yes",
+    "hard_blocked": "no"
+  }
+]
+File: wireless.json
+[
+  {
+    "name": "wlp2s0",
+    "mac": "ac:d5:64:0d:be:73",
+    "type": "managed",
+    "txpower": "0.00"
+  }
+]

@@ -1,91 +1,31 @@
 #!/usr/bin/env python3
+from dr_core_lite.helpers.paths import RAW_DIR, PARSED_DIR
+import os, json
 
-"""
-DR Core Lite — IW Scan Parser
+def parse_iw():
+    raw_file = os.path.join(RAW_DIR, "iw_raw.txt")
+    parsed_file = os.path.join(PARSED_DIR, "wireless.json")
 
-Purpose
--------
-Parse wireless scan output produced by the `iw` command.
+    parsed = []
+    if os.path.exists(raw_file):
+        with open(raw_file, "r") as f:
+            current_iface = {}
+            for line in f:
+                line = line.strip()
+                if line.startswith("Interface"):
+                    current_iface = {"name": line.split()[1]}
+                    parsed.append(current_iface)
+                elif line.startswith("addr") and current_iface:
+                    current_iface["mac"] = line.split()[1]
+                elif line.startswith("type") and current_iface:
+                    current_iface["type"] = line.split()[1]
+                elif line.startswith("txpower") and current_iface:
+                    current_iface["txpower"] = line.split()[1]
 
-Produces structured access point records.
-"""
+    os.makedirs(PARSED_DIR, exist_ok=True)
+    with open(parsed_file, "w") as f:
+        json.dump(parsed, f, indent=2)
+    return parsed
 
-from __future__ import annotations
-
-import re
-from typing import List, Dict
-
-
-BSS_PATTERN = re.compile(r"BSS\s+([0-9a-fA-F:]{17})")
-SSID_PATTERN = re.compile(r"SSID:\s+(.*)")
-SIGNAL_PATTERN = re.compile(r"signal:\s+(-?\d+\.?\d*)")
-CHANNEL_PATTERN = re.compile(r"DS Parameter set:\s+channel\s+(\d+)")
-
-
-def parse_iw(raw_output: str) -> List[Dict]:
-    """
-    Parse iw scan output into access point records.
-    """
-
-    records: List[Dict] = []
-
-    current_bssid = None
-    current_ssid = None
-    current_channel = None
-    current_signal = None
-
-    lines = raw_output.splitlines()
-
-    for line in lines:
-
-        line = line.strip()
-
-        bss_match = BSS_PATTERN.search(line)
-
-        if bss_match:
-
-            if current_bssid:
-                records.append(
-                    {
-                        "type": "access_point",
-                        "ssid": current_ssid,
-                        "bssid": current_bssid,
-                        "channel": current_channel,
-                        "signal": current_signal,
-                    }
-                )
-
-            current_bssid = bss_match.group(1)
-            current_ssid = None
-            current_channel = None
-            current_signal = None
-
-            continue
-
-        ssid_match = SSID_PATTERN.search(line)
-
-        if ssid_match:
-            current_ssid = ssid_match.group(1)
-
-        signal_match = SIGNAL_PATTERN.search(line)
-
-        if signal_match:
-            current_signal = int(float(signal_match.group(1)))
-
-        channel_match = CHANNEL_PATTERN.search(line)
-
-        if channel_match:
-            current_channel = int(channel_match.group(1))
-
-    if current_bssid:
-        records.append(
-            {
-                "type": "access_point",
-                "ssid": current_ssid,
-                "bssid": current_bssid,
-                "channel": current_channel,
-                "signal": current_signal,
-            }
-        )
-
-    return records
+if __name__ == "__main__":
+    parse_iw()

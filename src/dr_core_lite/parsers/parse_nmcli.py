@@ -1,50 +1,30 @@
 #!/usr/bin/env python3
+from dr_core_lite.helpers.paths import RAW_DIR, PARSED_DIR
+import os, json
 
-"""
-DR Core Lite — NMCLI Output Parser
+def parse_nmcli():
+    raw_file = os.path.join(RAW_DIR, "nmcli_raw.txt")
+    parsed_file = os.path.join(PARSED_DIR, "connections.json")
 
-Purpose
--------
-Parse NetworkManager device output into structured records.
-"""
+    parsed = []
+    if os.path.exists(raw_file):
+        with open(raw_file, "r") as f:
+            lines = f.readlines()
+            for line in lines[1:]:  # skip header
+                line = line.strip()
+                if line:
+                    parts = line.split()
+                    parsed.append({
+                        "device": parts[0],
+                        "type": parts[1],
+                        "state": parts[2],
+                        "connection": parts[3] if len(parts) > 3 else ""
+                    })
 
-from __future__ import annotations
+    os.makedirs(PARSED_DIR, exist_ok=True)
+    with open(parsed_file, "w") as f:
+        json.dump(parsed, f, indent=2)
+    return parsed
 
-from typing import List, Dict
-
-
-def parse_nmcli(raw_output: str) -> List[Dict]:
-    """
-    Parse nmcli device output into structured records.
-    """
-
-    records: List[Dict] = []
-
-    lines = raw_output.splitlines()
-
-    for line in lines:
-
-        if not line.strip():
-            continue
-
-        parts = line.split(":")
-
-        if len(parts) < 4:
-            continue
-
-        device = parts[0]
-        dev_type = parts[1]
-        state = parts[2]
-        connection = parts[3] if parts[3] else None
-
-        record = {
-            "type": "network_device",
-            "device": device,
-            "device_type": dev_type,
-            "state": state,
-            "connection": connection,
-        }
-
-        records.append(record)
-
-    return records
+if __name__ == "__main__":
+    parse_nmcli()

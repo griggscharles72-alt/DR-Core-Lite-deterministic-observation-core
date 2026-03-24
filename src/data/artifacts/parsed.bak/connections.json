@@ -1,0 +1,20 @@
+[
+  {
+    "device": "enp1s0",
+    "type": "ethernet",
+    "state": "connected",
+    "connection": "netplan-enp1s0"
+  },
+  {
+    "device": "lo",
+    "type": "loopback",
+    "state": "connected",
+    "connection": "lo"
+  },
+  {
+    "device": "wlp2s0",
+    "type": "wifi",
+    "state": "unavailable",
+    "connection": "--"
+  }
+]

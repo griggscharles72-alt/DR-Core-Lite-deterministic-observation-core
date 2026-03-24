@@ -1,5 +1,81 @@
 #!/usr/bin/env bash
-# Auto-set PYTHONPATH
-export PYTHONPATH="$(cd "$(dirname "$0")/../src" && pwd):$PYTHONPATH"
-# Execute main_wrapper.py with venv Python
-exec "$(cd "$(dirname "$0")/.." && pwd)/venv/bin/python3" "$(cd "$(dirname "$0")/../src" && pwd)/dr_core_lite/main_wrapper.py" "$@"
+# -----------------------------
+# DR-Core-Lite Full Pipeline Wrapper
+# -----------------------------
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+export PYTHONPATH="$REPO_ROOT/src:$PYTHONPATH"
+source "$REPO_ROOT/venv/bin/activate"
+
+RAW_DIR="$REPO_ROOT/src/data/artifacts/raw"
+PARSED_DIR="$REPO_ROOT/src/data/artifacts/parsed"
+REPORT_DIR="$REPO_ROOT/src/data/artifacts/reports"
+
+mkdir -p "$RAW_DIR" "$PARSED_DIR" "$REPORT_DIR"
+
+echo "[*] DR-Core-Lite Wrapper started"
+
+# -----------------------------
+# 1️⃣ Environment Validation (doctor)
+# -----------------------------
+echo "[*] Running environment validation..."
+DOCTOR_OK=1
+for cmd in python3 ip iw rfkill nmcli ethtool; do
+    if ! command -v $cmd &> /dev/null; then
+        echo "[!] Missing required command: $cmd"
+        DOCTOR_OK=0
+    else
+        echo "[+] Found $cmd"
+    fi
+done
+$DOCTOR_OK || echo "[*] Environment validation completed"
+
+# -----------------------------
+# 2️⃣ Collect Artifacts
+# -----------------------------
+echo "[*] Collecting artifacts..."
+TOOLS=(ip iw rfkill nmcli ethtool)
+for t in "${TOOLS[@]}"; do
+    TOOL_SCRIPT="$REPO_ROOT/src/dr_core_lite/tools/tool_${t}.py"
+    if [ -x "$TOOL_SCRIPT" ]; then
+        echo "[*] Running $t..."
+        python3 "$TOOL_SCRIPT"
+    else
+        echo "[!] Tool script missing or not executable: $t"
+    fi
+done
+
+# -----------------------------
+# 3️⃣ Parse Artifacts
+# -----------------------------
+echo "[*] Parsing artifacts..."
+PARSERS=(parse_ip parse_iw parse_rfkill parse_nmcli parse_ethtool)
+for p in "${PARSERS[@]}"; do
+    PARSER_SCRIPT="$REPO_ROOT/src/dr_core_lite/parsers/${p}.py"
+    if [ -x "$PARSER_SCRIPT" ]; then
+        echo "[*] Parsing $p..."
+        python3 "$PARSER_SCRIPT"
+    else
+        echo "[!] Parser script missing or not executable: $p"
+    fi
+done
+
+# -----------------------------
+# 4️⃣ Reporting
+# -----------------------------
+echo "[*] Generating reports..."
+SUMMARY_FILE="$REPORT_DIR/summary.txt"
+{
+    echo "DR-Core-Lite Observation Summary"
+    echo "==============================="
+    for f in "$PARSED_DIR"/*.json; do
+        [ -f "$f" ] || continue
+        echo ""
+        echo "File: $(basename "$f")"
+        cat "$f"
+    done
+} > "$SUMMARY_FILE"
+
+echo "[+] Reports saved to $SUMMARY_FILE"
+
+echo "[*] DR-Core-Lite run complete"

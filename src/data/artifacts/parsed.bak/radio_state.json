@@ -1,0 +1,14 @@
+[
+  {
+    "index": "0",
+    "name": "hci0",
+    "soft_blocked": "yes",
+    "hard_blocked": "no"
+  },
+  {
+    "index": "1",
+    "name": "phy0",
+    "soft_blocked": "yes",
+    "hard_blocked": "no"
+  }
+]
