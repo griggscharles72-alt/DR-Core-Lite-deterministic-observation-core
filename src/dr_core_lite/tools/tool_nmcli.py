@@ -1,47 +1,24 @@
 #!/usr/bin/env python3
+from dr_core_lite.helpers.paths import RAW_DIR
+import subprocess, os, shutil
 
-"""
-DR Core Lite — NMCLI Tool Runner
+def run_command(cmd):
+    if shutil.which(cmd[0]) is None:
+        return f"[!] Command not found: {cmd[0]}\n"
+    try:
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        return result.stdout
+    except Exception as e:
+        return f"[!] Error running {cmd}: {e}\n"
 
-Purpose
--------
-Execute the `nmcli` command to observe network device state.
+def run():
+    os.makedirs(RAW_DIR, exist_ok=True)
+    cmd = ['nmcli','device','status']
+    output = run_command(cmd)
+    raw_path = os.path.join(RAW_DIR, 'nmcli_raw.txt')
+    with open(raw_path, 'w') as f:
+        f.write(output)
+    return output
 
-Responsibilities
-----------------
-- run nmcli device query
-- capture output
-- store raw artifact
-- return output for parsing
-"""
-
-from __future__ import annotations
-
-from dr_core_lite.helpers.subprocess_safe import run_command
-from dr_core_lite.helpers.paths import RAW_DIR, LOGS_DIR
-from dr_core_lite.helpers.time_utils import run_id
-from dr_core_lite.helpers.log_utils import log_line
-
-
-def run_nmcli() -> str:
-    """
-    Execute nmcli device query and return raw output.
-    """
-
-    command = ["nmcli", "-t", "-f", "DEVICE,TYPE,STATE,CONNECTION", "dev"]
-
-    result = run_command(command)
-
-    raw_output = result.stdout
-
-    artifact_dir = RAW_DIR / "nmcli"
-    artifact_dir.mkdir(parents=True, exist_ok=True)
-
-    artifact_path = artifact_dir / f"{run_id()}_nmcli.txt"
-
-    with artifact_path.open("w", encoding="utf-8") as f:
-        f.write(raw_output)
-
-    log_line(LOGS_DIR / "core.log", "tool_nmcli executed")
-
-    return raw_output
+if __name__ == "__main__":
+    run()

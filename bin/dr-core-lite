@@ -1,18 +1,5 @@
 #!/usr/bin/env bash
-
-# DR Core Lite — CLI Launcher
-
-# Determine repository root
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-
-# Activate virtual environment if present
-if [ -d "$REPO_ROOT/.venv" ]; then
-    source "$REPO_ROOT/.venv/bin/activate"
-fi
-
-# Ensure project source directory is available to Python
-export PYTHONPATH="$REPO_ROOT/src:$PYTHONPATH"
-
-# Execute main wrapper
-python3 -m dr_core_lite.main_wrapper "$@"
+# Auto-set PYTHONPATH
+export PYTHONPATH="$(cd "$(dirname "$0")/../src" && pwd):$PYTHONPATH"
+# Execute main_wrapper.py with venv Python
+exec "$(cd "$(dirname "$0")/.." && pwd)/venv/bin/python3" "$(cd "$(dirname "$0")/../src" && pwd)/dr_core_lite/main_wrapper.py" "$@"

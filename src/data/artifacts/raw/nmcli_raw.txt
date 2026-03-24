@@ -1,0 +1,4 @@
+DEVICE  TYPE      STATE        CONNECTION     
+enp1s0  ethernet  connected    netplan-enp1s0 
+lo      loopback  connected    lo             
+wlp2s0  wifi      unavailable  --             
